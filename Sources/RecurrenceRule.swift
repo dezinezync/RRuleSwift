@@ -102,7 +102,7 @@ public struct RecurrenceRule {
             return nil
         }
         
-        let ruleJSONString = toJSONString(endless: Iterator.endlessRecurrenceCount)
+        let ruleJSONString = toJSONString()
         let _ = Iterator.rruleContext?.evaluateScript("var rule = new RRule({ \(ruleJSONString) })")
         
         return Iterator.rruleContext?.evaluateScript("rule.toText()").toString()

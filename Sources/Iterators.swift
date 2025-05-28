@@ -10,7 +10,6 @@ import Foundation
 import JavaScriptCore
 
 public struct Iterator {
-    public static let endlessRecurrenceCount = 500
     internal static let rruleContext: JSContext? = {
         let scripts = JavaScriptBridge.rrulejs()
         guard let rrulejs = scripts.lib,
@@ -28,12 +27,12 @@ public struct Iterator {
 }
 
 public extension RecurrenceRule {
-    func allOccurrences(endless endlessRecurrenceCount: Int = Iterator.endlessRecurrenceCount) -> [Date] {
+    func allOccurrences() -> [Date] {
         guard let _ = JavaScriptBridge.rrulejs().lib else {
             return []
         }
 
-        let ruleJSONString = toJSONString(endless: endlessRecurrenceCount)
+        let ruleJSONString = toJSONString()
         let _ = Iterator.rruleContext?.evaluateScript("var rule = new RRule({ \(ruleJSONString) })")
         guard let allOccurrences = Iterator.rruleContext?.evaluateScript("rule.all()").toArray() as? [Date] else {
             return []
@@ -59,7 +58,7 @@ public extension RecurrenceRule {
         return occurrences.sorted { $0.isBeforeOrSame(with: $1) }
     }
 
-    func occurrences(between date: Date, and otherDate: Date, endless endlessRecurrenceCount: Int = Iterator.endlessRecurrenceCount) -> [Date] {
+    func occurrences(between date: Date, and otherDate: Date) -> [Date] {
         guard let _ = JavaScriptBridge.rrulejs().lib else {
             return []
         }
@@ -69,7 +68,7 @@ public extension RecurrenceRule {
         let beginDateJSON = RRule.ISO8601DateFormatter.string(from: beginDate)
         let untilDateJSON = RRule.ISO8601DateFormatter.string(from: untilDate)
 
-        let ruleJSONString = toJSONString(endless: endlessRecurrenceCount)
+        let ruleJSONString = toJSONString()
         let _ = Iterator.rruleContext?.evaluateScript("var rule = new RRule({ \(ruleJSONString) })")
         guard let betweenOccurrences = Iterator.rruleContext?.evaluateScript("rule.between(new Date('\(beginDateJSON)'), new Date('\(untilDateJSON)'))").toArray() as? [Date] else {
             return []
