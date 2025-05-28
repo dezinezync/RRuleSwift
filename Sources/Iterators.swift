@@ -10,6 +10,8 @@ import Foundation
 import JavaScriptCore
 
 public struct Iterator {
+    public static let endlessRecurrenceCount: Int = 500
+    
     internal static let rruleContext: JSContext? = {
         let scripts = JavaScriptBridge.rrulejs()
         guard let rrulejs = scripts.lib,
@@ -27,22 +29,22 @@ public struct Iterator {
 }
 
 public extension RecurrenceRule {
-    func allOccurrences() -> [Date] {
+    func allOccurrences(endless endlessRecurrenceCount: Int = Iterator.endlessRecurrenceCount) -> [Date] {
         guard let _ = JavaScriptBridge.rrulejs().lib else {
             return []
         }
-
-        let ruleJSONString = toJSONString()
+        
+        let ruleJSONString = toJSONString(endless: endlessRecurrenceCount)
         let _ = Iterator.rruleContext?.evaluateScript("var rule = new RRule({ \(ruleJSONString) })")
         guard let allOccurrences = Iterator.rruleContext?.evaluateScript("rule.all()").toArray() as? [Date] else {
             return []
         }
-
+        
         var occurrences = allOccurrences
         if let rdates = rdate?.dates {
             occurrences.append(contentsOf: rdates)
         }
-
+        
         if let exdates = exdate?.dates, let component = exdate?.component {
             for occurrence in occurrences {
                 for exdate in exdates {
@@ -54,31 +56,31 @@ public extension RecurrenceRule {
                 }
             }
         }
-
+        
         return occurrences.sorted { $0.isBeforeOrSame(with: $1) }
     }
-
-    func occurrences(between date: Date, and otherDate: Date) -> [Date] {
+    
+    func occurrences(between date: Date, and otherDate: Date, endless endlessRecurrenceCount: Int = Iterator.endlessRecurrenceCount) -> [Date] {
         guard let _ = JavaScriptBridge.rrulejs().lib else {
             return []
         }
-
+        
         let beginDate = date.isBeforeOrSame(with: otherDate) ? date : otherDate
         let untilDate = otherDate.isAfterOrSame(with: date) ? otherDate : date
         let beginDateJSON = RRule.ISO8601DateFormatter.string(from: beginDate)
         let untilDateJSON = RRule.ISO8601DateFormatter.string(from: untilDate)
-
-        let ruleJSONString = toJSONString()
+        
+        let ruleJSONString = toJSONString(endless: endlessRecurrenceCount)
         let _ = Iterator.rruleContext?.evaluateScript("var rule = new RRule({ \(ruleJSONString) })")
         guard let betweenOccurrences = Iterator.rruleContext?.evaluateScript("rule.between(new Date('\(beginDateJSON)'), new Date('\(untilDateJSON)'))").toArray() as? [Date] else {
             return []
         }
-
+        
         var occurrences = betweenOccurrences
         if let rdates = rdate?.dates {
             occurrences.append(contentsOf: rdates)
         }
-
+        
         if let exdates = exdate?.dates, let component = exdate?.component {
             for occurrence in occurrences {
                 for exdate in exdates {
@@ -90,7 +92,7 @@ public extension RecurrenceRule {
                 }
             }
         }
-
+        
         return occurrences.sorted { $0.isBeforeOrSame(with: $1) }
     }
 }
